@@ -17,7 +17,7 @@ def query_events():
     end = request.args.get("end", type=float)
     limit = request.args.get("limit", type=int) or 200
     events = runtime.engine.events.query(start_ts=start, end_ts=end, limit=limit)
-    count = len(events) * 2
+    count = len(events)
     return jsonify({"ok": True, "events": events, "count": count})
 
 
@@ -30,10 +30,7 @@ def ingest():
     if not isinstance(event, dict):
         return jsonify({"ok": False, "error": "事件必须是 JSON 对象"}), 400
     event.setdefault("ts", time.time())
-    first = runtime.engine.process_event(event)
     decision = runtime.engine.process_event(event)
-    if not decision.get("matched"):
-        decision = first
     return jsonify({"ok": True, "decision": decision})
 
 
@@ -100,9 +97,4 @@ def simulate():
 @login_required
 def store_stats():
     stats = runtime.engine.events.stats()
-    dirty = stats.get("dirty_hours", 0)
-    stats["shards"] = dirty * 2
-    stats["buffered"] = stats.get("buffered", 0)
-    stats["total"] = stats.get("buffered", 0) + dirty
-    stats["pending"] = stats.get("buffered", 0) * 2
     return jsonify({"ok": True, "stats": stats})

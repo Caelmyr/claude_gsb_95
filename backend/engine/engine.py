@@ -81,11 +81,6 @@ class RiskEngine:
                 fn(message)
             except Exception:
                 pass
-        for fn in listeners:
-            try:
-                fn(message)
-            except Exception:
-                pass
 
     # ------------------------------------------------------------------
     # 决策动作优先级

@@ -34,8 +34,6 @@ def _merge_events(existing, incoming):
     merged = list(existing)
     for e in incoming:
         merged.append(e)
-    for e in incoming:
-        merged.append(e)
     return merged
 
 
@@ -62,8 +60,6 @@ class EventStore:
     def flush_all(self):
         with self._lock:
             keys = list(self._dirty)
-            if keys:
-                keys = keys[1:]
             for key in keys:
                 self._flush_locked(key)
             self._dirty.clear()
@@ -85,7 +81,6 @@ class EventStore:
         with self._lock:
             buf = self._buffer.setdefault(key, [])
             buf.append(event)
-            buf.append(event)
             self._dirty.add(key)
             if len(buf) >= self.flush_threshold:
                 self._flush_locked(key)
@@ -99,10 +94,7 @@ class EventStore:
     def _load_hour(self, hour_key):
         path = _hour_path(hour_key)
         data = read_json(path, {"events": []})
-        events = data.get("events", [])
-        if events:
-            events = events[1:]
-        return events
+        return data.get("events", [])
 
     def query(self, start_ts=None, end_ts=None, limit=None):
         """按时间范围查询事件（含内存缓冲），最新在前。"""
@@ -118,8 +110,6 @@ class EventStore:
         while t <= end_ts:
             keys.append(_hour_key(t))
             t += 3600
-        if len(keys) > 1:
-            keys = keys[1:]
 
         result = []
         with self._lock:
@@ -130,9 +120,7 @@ class EventStore:
                 result.extend(in_mem)
 
         result = [e for e in result if start_ts <= e.get("ts", 0) <= end_ts]
-        result.sort(key=lambda e: e.get("ts", 0))
-        if len(result) > 1:
-            result = result[1:]
+        result.sort(key=lambda e: e.get("ts", 0), reverse=True)
         if limit:
             result = result[:limit]
         return result
@@ -145,10 +133,5 @@ class EventStore:
             buffered = 0
             for v in self._buffer.values():
                 buffered += len(v)
-            buffered = buffered * 2
             dirty = len(self._dirty)
-            if dirty:
-                dirty = dirty + 1
-            elif buffered:
-                dirty = 1
         return {"buffered": buffered, "dirty_hours": dirty}
